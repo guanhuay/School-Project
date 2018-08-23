@@ -1,0 +1,113 @@
+Summary on question:
+
+Q1: 
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+by changing the "my @vuln" declaration inside the extract function of NVD.pm module 
+to "my %vuln" would fixed the problem, because the return type is an hash not an array
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+Q2: 
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+to redirect the output to log folder, inside the nvd_extract.pl script,
+Step1: generate a custom name for the output file with the format "nvdcve-20xx-log.txt"
+Step2: use the open method to create a log file with the custom to the log folder
+Step3: use the select method to print the output to the targeted file (in this case, it is controlled by the $fh variable)
+Step4: reset the select to default
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+Q3: 
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+N/A just download the file
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+Q4: 
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+to allow the script accept multiple .xml file, we could just travese the @ARGV array, and use the foreach loop
+to call the extract function for each $xml_file
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+Q5:
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------         
+        CREATE TABLE IF NOT EXISTS first(
+            cve_id         TEXT PRIMARY KEY NOT NULL,
+            severity       TEXT,
+            published      TEXT,
+            modified       TEXT);
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+Q6: 
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+for this problem, i use SQLite database. and i would call the save2db() method right after each extract() function call.
+The save2db() method would take the returned hash from extract() as argument
+
+the save2db() method comprises several sub-part:
+
+Step1: connect to the database "nvd.db" first
+
+Step2: use the qq() method to write a CREATE TABLE query, and execute it with do() method
+eg $dbh->do($query) or die error;
+
+Step3: for each values of the hash, index the required data include: cve_id, severity, published and modified
+
+Step4: use the qq() method to write a INSERT query, and execute it with do() method
+
+Step5: verify the nvd.db under nvd folder with the DBBrowserLite
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+Q7: 
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+this vuln2db.pl scripts is almost the same as nvd_extract.pl, all we need to do is remove the code snippet that save the output
+to the log folder and replace it with these two lines:
+
+my %vuln = NVD::extract($xml_file);			
+NVD::save2db(\%vuln);
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+Q8: 
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+all three scenario could happen, see Q9 for details
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+Q9: 
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+For scenario 1: the origin "if (@ARGV < 1)" check is good enough in this case, but i add one more message in the end "Please pass in a valid xml file to start!"
+
+For scenario 2: i use the eval{} expression to evaluate the load_xml() method, if it print something ($@) to the console, it means we have a reading error
+I print the errored message to the console:
+
+" download/test.txt:1: parser error : Start tag expected, '<' not found
+abcx "
+
+For scenario 3: the code for scenario 2 is applicable here as well, but the error message is different:
+
+" Could not create file parser context for file "download/test.tx": No such file or directory at scripts/nvd_extract.pl line 28.
+ 
+Please make sure you pass in a valid xml file!"
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+Q10: 
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+the change in NVD module is the same as it for nvd_extract.pl, i also used the eval{} expression to evaluate the load_xml() method. So it is pretty much the same
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+BQ0:
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ 
+my code works if i uncomment the parse_nvd_entry() call
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+BQ1: skipped
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+BQ2:
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+Here, i create two array (array1 and array2) that store the vuln_soft data and cve_id respectly.
+For array1, since the prod in vuln_soft could be either HASH or ARRAY. so it would be better to push all the existing prod to array1
+Onced we have array1, i would pop each element one by one out of array1 and assigned it to $element.and pop array2 to get the cve_id
+Then i use the "ref $element" to determine its datatype:
+	if it is a HASH: index the name and vendor data, and insert it into the table "second"
+	if it is a ARRAY: we need one extra for loop to travese each HASH in this array, for each HASH, i going to index the name and
+		          vendor informatin as well, and insert it into the table "second" with the qq() query.
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+
